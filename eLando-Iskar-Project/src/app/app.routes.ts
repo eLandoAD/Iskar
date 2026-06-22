@@ -12,7 +12,6 @@ export const routes: Routes = [
   { path: 'waiting-room', component: WaitingRoom },
   { path: 'call', component: Call },
   { path: 'contact', component: ContactFallback },
-  { path: '**', redirectTo: '' },
   { path: 'consultant/login', component: ConsultantLogin },
   { path: 'consultant/dashboard', component: ConsultantDashboard },
   { path: 'consultant/call', component: ConsultantCall },

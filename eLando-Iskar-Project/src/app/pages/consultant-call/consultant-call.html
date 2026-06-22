@@ -1,1 +1,48 @@
-<p>consultant-call works!</p>
+<div class="call-page">
+
+  <div class="call-main">
+
+    <div class="status-bar">
+      <span class="status-dot" [ngClass]="connectionState"></span>
+      <span>{{ connectionLabel }}</span>
+    </div>
+
+    <div class="video-container">
+      <video #localVideo autoplay muted playsinline class="local-video"></video>
+      <p class="video-label">You (Consultant)</p>
+    </div>
+
+    <div class="call-controls">
+      <button class="screen-share-btn" (click)="toggleScreenShare()">
+        {{ sharingScreen ? 'Stop Sharing' : 'Share Screen' }}
+      </button>
+      <button class="end-call-btn" (click)="endCall()">End Call</button>
+    </div>
+
+  </div>
+
+  <div class="chat-panel">
+    <h3>Chat</h3>
+
+    <div class="chat-messages" #chatMessages>
+      <div
+        class="message"
+        *ngFor="let msg of messages"
+        [ngClass]="msg.from === 'me' ? 'mine' : 'theirs'"
+      >
+        <span>{{ msg.text }}</span>
+      </div>
+    </div>
+
+    <div class="chat-input">
+      <input
+        type="text"
+        placeholder="Type a message..."
+        [(ngModel)]="chatInput"
+        (keyup.enter)="sendMessage()"
+      />
+      <button (click)="sendMessage()">Send</button>
+    </div>
+  </div>
+
+</div>

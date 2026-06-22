@@ -1,1 +1,26 @@
-<p>consultant-login works!</p>
+<div class="login-container">
+
+  <div class="login-card">
+    <h1>Video Store</h1>
+    <p class="subtitle">Consultant Portal</p>
+
+    <input
+      type="text"
+      placeholder="Username"
+      [(ngModel)]="username"
+    />
+
+    <input
+      type="password"
+      placeholder="Password"
+      [(ngModel)]="password"
+    />
+
+    <button (click)="login()" [disabled]="loading">
+      {{ loading ? 'Logging in...' : 'Login' }}
+    </button>
+
+    <p *ngIf="error" class="error">{{ error }}</p>
+  </div>
+
+</div>

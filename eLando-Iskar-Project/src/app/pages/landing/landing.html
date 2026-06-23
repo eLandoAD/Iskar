@@ -1,0 +1,25 @@
+<main class="landing">
+  <h1>Acme Mobile — Unlimited 5G Plan</h1>
+  <p>Have a question about this plan? Talk to a consultant live.</p>
+  <button (click)="openConsent('unlimited-5g-plan-page')">Start video call</button>
+</main>
+
+@if (showConsent) {
+  <div class="consent-overlay">
+    <div class="consent-modal">
+      <h2>Before we connect you</h2>
+      <p>
+        You'll see and hear the consultant on video. They will not see your
+        camera. With your permission, they'll be able to hear you.
+      </p>
+      <label>
+        <input type="checkbox" [(ngModel)]="agreed" />
+        I agree to the terms and conditions and consent to starting this call.
+      </label>
+      <div class="consent-actions">
+        <button (click)="cancelConsent()">Cancel</button>
+        <button (click)="confirmConsent()" [disabled]="!agreed">Continue</button>
+      </div>
+    </div>
+  </div>
+}

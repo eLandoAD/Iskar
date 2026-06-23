@@ -1,0 +1,70 @@
+<div class="admin-page">
+
+  <header class="admin-header">
+    <h1>Admin Dashboard</h1>
+    <button class="export-btn" (click)="exportCsv()">Export CSV</button>
+  </header>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <span class="stat-value">{{ stats.callsToday }}</span>
+      <span class="stat-label">Calls Today</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ stats.avgAnswerTime }}s</span>
+      <span class="stat-label">Avg Answer Time</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ stats.consultantsOnline }}</span>
+      <span class="stat-label">Consultants Online</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ stats.missedCalls }}</span>
+      <span class="stat-label">Missed Calls</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button
+      *ngFor="let tab of tabs"
+      [ngClass]="{ active: activeTab === tab }"
+      (click)="activeTab = tab"
+    >
+      {{ tab }}
+    </button>
+  </div>
+
+  <!-- Call Log Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Consultant</th>
+          <th>Source Page</th>
+          <th>Start Time</th>
+          <th>Duration</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let call of filteredCalls()">
+          <td>{{ call.consultant }}</td>
+          <td>{{ call.sourcePage }}</td>
+          <td>{{ call.startTime }}</td>
+          <td>{{ call.duration }}</td>
+          <td>
+            <span class="badge" [ngClass]="call.status">
+              {{ call.status }}
+            </span>
+          </td>
+        </tr>
+        <tr *ngIf="filteredCalls().length === 0">
+          <td colspan="5" class="empty">No calls to show.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

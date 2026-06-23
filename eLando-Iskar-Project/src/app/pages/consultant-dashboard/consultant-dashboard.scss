@@ -1,0 +1,99 @@
+.dashboard {
+  min-height: 100vh;
+  background: #f5f7fa;
+  font-family: sans-serif;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  background: #1976d2;
+  color: white;
+
+  h1 {
+    margin: 0;
+    font-size: 22px;
+  }
+
+  .status-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    select {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+    }
+  }
+}
+
+.queue-section {
+  padding: 32px;
+
+  h2 {
+    margin-bottom: 20px;
+    color: #333;
+  }
+}
+
+.empty-queue {
+  color: #888;
+  font-size: 16px;
+}
+
+.customer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border-radius: 10px;
+  padding: 18px 24px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+
+  .customer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .source {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .wait-time {
+      font-size: 13px;
+      color: #888;
+    }
+  }
+
+  .customer-actions {
+    display: flex;
+    gap: 10px;
+
+    button {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .answer-btn {
+      background: #43a047;
+      color: white;
+      &:hover { background: #388e3c; }
+    }
+
+    .decline-btn {
+      background: #e53935;
+      color: white;
+      &:hover { background: #c62828; }
+    }
+  }
+}

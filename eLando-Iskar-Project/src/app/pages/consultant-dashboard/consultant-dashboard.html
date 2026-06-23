@@ -1,0 +1,35 @@
+<div class="dashboard">
+
+  <header class="dashboard-header">
+    <h1>Consultant Dashboard</h1>
+    <div class="status-control">
+      <span>Status:</span>
+      <select [(ngModel)]="status" (ngModelChange)="onStatusChange($event)">
+        <option value="online">🟢 Online</option>
+        <option value="busy">🟡 Busy</option>
+        <option value="offline">🔴 Offline</option>
+      </select>
+    </div>
+  </header>
+
+  <main class="queue-section">
+    <h2>Waiting Customers</h2>
+
+    <div *ngIf="waitingCustomers.length === 0" class="empty-queue">
+      <p>No customers waiting.</p>
+    </div>
+
+    <div class="customer-card" *ngFor="let customer of waitingCustomers">
+      <div class="customer-info">
+        <span class="source">📄 {{ customer.sourcePage }}</span>
+        <span class="wait-time">⏱ Waiting {{ customer.waitTime }}s</span>
+      </div>
+      <div class="customer-actions">
+        <button class="answer-btn" (click)="answerCall(customer)">Answer</button>
+        <button class="decline-btn" (click)="declineCall(customer)">Decline</button>
+      </div>
+    </div>
+
+  </main>
+
+</div>

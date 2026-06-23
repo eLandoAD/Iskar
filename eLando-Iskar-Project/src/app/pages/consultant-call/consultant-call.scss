@@ -1,0 +1,146 @@
+.call-page {
+  display: flex;
+  height: 100vh;
+  background: #1a1a2e;
+  color: white;
+  font-family: sans-serif;
+}
+
+.call-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #aaa;
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+
+    &.connected { background: #43a047; }
+    &.checking  { background: #ffa726; }
+    &.failed    { background: #e53935; }
+  }
+}
+
+.video-container {
+  position: relative;
+
+  .local-video {
+    width: 640px;
+    max-width: 90vw;
+    border-radius: 12px;
+    background: #000;
+    border: 2px solid #333;
+  }
+
+  .video-label {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 13px;
+    color: #aaa;
+  }
+}
+
+.call-controls {
+  display: flex;
+  gap: 16px;
+
+  button {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .screen-share-btn {
+    background: #1976d2;
+    color: white;
+    &:hover { background: #1565c0; }
+  }
+
+  .end-call-btn {
+    background: #e53935;
+    color: white;
+    &:hover { background: #c62828; }
+  }
+}
+
+.chat-panel {
+  width: 300px;
+  background: #16213e;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-left: 1px solid #333;
+
+  h3 {
+    margin: 0 0 16px;
+    font-size: 16px;
+    color: #ddd;
+  }
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+
+  .message {
+    max-width: 85%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+
+    &.mine {
+      align-self: flex-end;
+      background: #1976d2;
+    }
+
+    &.theirs {
+      align-self: flex-start;
+      background: #333;
+    }
+  }
+}
+
+.chat-input {
+  display: flex;
+  gap: 8px;
+
+  input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 6px;
+    border: none;
+    background: #0f3460;
+    color: white;
+    font-size: 14px;
+
+    &::placeholder { color: #888; }
+  }
+
+  button {
+    padding: 8px 14px;
+    background: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+}

@@ -1,9 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ConsultantSignaling } from '../../services/consultant-signaling';
 import { Subscription } from 'rxjs';
+
 
 interface WaitingCustomer {
   sessionId: string;
@@ -23,39 +24,76 @@ export class ConsultantDashboard implements OnInit, OnDestroy {
 
   private msgSub?: Subscription;
   private timerInterval?: any;
+  private waitTimeInterval?: any;
+  private pollInterval?: any;
 
   constructor(
     private signaling: ConsultantSignaling,
-    private router: Router
-  ) {}
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) { }
 
   ngOnInit(): void {
-    // Listen for incoming messages from the backend
-    this.msgSub = this.signaling.messages$.subscribe(msg => {
-      if (msg.type === 'queue-update') {
-        this.waitingCustomers = msg.payload.customers;
-      }
-    });
+    this.loadQueue();
 
-    // Tick wait times every second
-    this.timerInterval = setInterval(() => {
+    // Poll for new customers every 3 seconds
+    this.pollInterval = setInterval(() => {
+      this.loadQueue();
+    }, 3000);
+
+    // Tick wait times every second separately
+    this.waitTimeInterval = setInterval(() => {
       this.waitingCustomers = this.waitingCustomers.map(c => ({
         ...c,
         waitTime: c.waitTime + 1,
       }));
     }, 1000);
+
+    this.msgSub = this.signaling.messages$.subscribe(msg => {
+      if (msg.type === 'queue-update') {
+        this.waitingCustomers = msg.payload.customers;
+      }
+    });
   }
 
+  loadQueue(): void {
+    fetch('http://localhost:8080/api/calls')
+      .then(res => res.json())
+      .then(calls => {
+        const filtered = calls
+          .filter((c: any) => c.status === 'WAITING' || c.status === 'ACTIVE')
+          .map((c: any) => ({
+            sessionId: c.sessionId,
+            sourcePage: c.sourcePage,
+            waitTime: 0
+          }));
+        this.waitingCustomers = [...filtered];
+        this.cdr.detectChanges(); // force UI update
+      });
+
+  }
   onStatusChange(newStatus: string): void {
-    this.signaling.send('status-update', '', { status: newStatus });
+    const consultantId = sessionStorage.getItem('consultantId');
+    fetch(`http://localhost:8080/api/consultants/${consultantId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus.toUpperCase() })
+    });
   }
 
   answerCall(customer: WaitingCustomer): void {
-    this.signaling.send('answer-customer', customer.sessionId, {});
-    // Navigate to the call page, passing the sessionId
-    this.router.navigate(['/consultant/call'], {
-      queryParams: { sessionId: customer.sessionId }
-    });
+    // Connect WebSocket with customer's sessionId
+    this.signaling.connect(customer.sessionId);
+
+    // Wait for socket to open, then send assigned message to customer
+    setTimeout(() => {
+      this.signaling.send('assigned', customer.sessionId, { consultantId: sessionStorage.getItem('consultantId') });
+
+      // Navigate to call page
+      this.router.navigate(['/consultant/call'], {
+        queryParams: { sessionId: customer.sessionId }
+      });
+    }, 500);
   }
 
   declineCall(customer: WaitingCustomer): void {
@@ -68,6 +106,7 @@ export class ConsultantDashboard implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.msgSub?.unsubscribe();
-    clearInterval(this.timerInterval);
+    clearInterval(this.pollInterval);
+    clearInterval(this.waitTimeInterval);
   }
 }

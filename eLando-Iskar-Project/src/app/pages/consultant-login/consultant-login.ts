@@ -19,27 +19,35 @@ export class ConsultantLogin {
   constructor(
     private router: Router,
     private signaling: ConsultantSignaling
-  ) {}
+  ) { }
 
   login(): void {
-    if (!this.username.trim() || !this.password.trim()) {
-      this.error = 'Please enter username and password';
-      return;
-    }
-
-    this.loading = true;
-    this.error = '';
-
-    // Store consultant ID — will be replaced with real API call once Person A is ready
-    sessionStorage.setItem('consultantId', this.username);
-
-    // Connect the WebSocket as this consultant
-    this.signaling.connect(this.username);
-
-    // Small delay to simulate login — remove when real API exists
-    setTimeout(() => {
-      this.loading = false;
-      this.router.navigate(['/consultant/dashboard']);
-    }, 500);
+  if (!this.username.trim() || !this.password.trim()) {
+    this.error = 'Please enter username and password';
+    return;
   }
+
+  this.loading = true;
+  this.error = '';
+
+  fetch('http://localhost:8080/api/consultants/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: this.username, password: this.password })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Invalid credentials');
+    return res.json();
+  })
+  .then(data => {
+    sessionStorage.setItem('consultantId', data.id);
+    sessionStorage.setItem('consultantUsername', data.username);
+    this.signaling.connect(data.id.toString());
+    this.router.navigate(['/consultant/dashboard']);
+  })
+  .catch(() => {
+    this.error = 'Invalid username or password';
+    this.loading = false;
+  });
+}
 }

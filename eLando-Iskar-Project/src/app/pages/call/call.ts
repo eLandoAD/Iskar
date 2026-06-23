@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Signaling, SignalMessage } from '../../services/signaling';
 import { Router } from '@angular/router';
@@ -31,10 +31,17 @@ export class Call implements OnInit {
   draft = '';
   sentFiles: string[] = [];
 
-  constructor(private signaling: Signaling, private router: Router) { }
+  constructor(
+    private signaling: Signaling,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) { }
 
   ngOnInit(): void {
-    this.signaling.messages$.subscribe((msg) => this.handleMessage(msg));
+    this.signaling.messages$.subscribe((msg) => {
+      console.log('Customer received message:', msg.type);
+      this.handleMessage(msg);
+    });
   }
 
   sendChat(): void {
@@ -45,6 +52,7 @@ export class Call implements OnInit {
   }
 
   private async handleMessage(msg: SignalMessage): Promise<void> {
+    console.log('Customer received message:', msg.type);
     if (msg.type === 'offer') {
       await this.handleOffer(msg.payload);
     } else if (msg.type === 'ice-candidate') {
@@ -60,6 +68,7 @@ export class Call implements OnInit {
       this.isScreenSharing = false;
     } else if (msg.type === 'end-call') {
       this.callEnded = true;
+      this.cdr.detectChanges();
       this.peerConnection?.close();
       this.screenPeerConnection?.close();
     }
@@ -70,7 +79,9 @@ export class Call implements OnInit {
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     });
 
+    // Set ontrack FIRST before setRemoteDescription
     this.peerConnection.ontrack = (event) => {
+      console.log('Track received!', event.streams);
       this.remoteVideoRef.nativeElement.srcObject = event.streams[0];
     };
 
@@ -104,7 +115,8 @@ export class Call implements OnInit {
     }
 
     if (micStream) {
-      micStream.getAudioTracks().forEach((track) => this.peerConnection.addTrack(track, micStream!));
+      micStream.getAudioTracks().forEach((track) =>
+        this.peerConnection.addTrack(track, micStream!));
     }
 
     const answer = await this.peerConnection.createAnswer();
@@ -118,15 +130,28 @@ export class Call implements OnInit {
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     });
 
+    // Set to true FIRST so the video element gets rendered
+    this.isScreenSharing = true;
+    this.cdr.detectChanges();
+
     this.screenPeerConnection.ontrack = (event) => {
-      this.screenVideoRef.nativeElement.srcObject = event.streams[0];
-      this.isScreenSharing = true;
+      // Wait for DOM to render the video element
+      setTimeout(() => {
+        if (this.screenVideoRef?.nativeElement) {
+          this.screenVideoRef.nativeElement.srcObject = event.streams[0];
+        }
+      }, 100);
     };
 
-    this.screenPeerConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        this.signaling.send('screen-ice-candidate', event.candidate.toJSON());
-      }
+    this.screenPeerConnection.ontrack = (event) => {
+      console.log('Screen track received!', event.streams);
+      setTimeout(() => {
+        if (this.screenVideoRef?.nativeElement) {
+          this.screenVideoRef.nativeElement.srcObject = event.streams[0];
+        } else {
+          console.log('screenVideoRef still undefined!');
+        }
+      }, 100);
     };
 
     await this.screenPeerConnection.setRemoteDescription(offer);
@@ -146,6 +171,8 @@ export class Call implements OnInit {
     const file = input.files?.[0];
     if (!file) return;
 
+    console.log('Uploading file, sessionId:', this.signaling.sessionId);
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('sessionId', this.signaling.sessionId);
@@ -155,13 +182,15 @@ export class Call implements OnInit {
       body: formData,
     });
 
+    console.log('Upload response status:', response.status);
+
     if (!response.ok) {
       console.error('File upload failed', response.status);
       return;
     }
 
     this.sentFiles.push(file.name);
-    input.value = ''; // reset so the same file can be picked again if needed
+    input.value = '';
   }
 
   goHome(): void {

@@ -1,1 +1,50 @@
+@if (callEnded) {
+<div class="call-ended">
+    <p>Call ended.</p>
+    <button (click)="goHome()">Back to start</button>
+</div>
+} @else {
 <video #remoteVideo autoplay playsinline style="width: 100%; max-width: 480px;"></video>
+ 
+<div class="chat">
+    <div class="chat-log">
+        @for (entry of chatLog; track $index) {
+        <p [class.me]="entry.from === 'me'">
+            <strong>{{ entry.from === 'me' ? 'You' : 'Consultant' }}:</strong> {{ entry.text }}
+        </p>
+        }
+    </div>
+ 
+    <div class="chat-input">
+        <input [(ngModel)]="draft" (keyup.enter)="sendChat()" placeholder="Type a message…" />
+        <button (click)="sendChat()">Send</button>
+    </div>
+ 
+    <div class="file-transfer">
+        <input #fileInput type="file" (change)="onFileSelected($event)" />
+ 
+        @if (sentFiles.length > 0) {
+        <ul class="sent-files">
+            @for (name of sentFiles; track name) {
+            <li>Sent: {{ name }}</li>
+            }
+        </ul>
+        }
+ 
+        @if (isScreenSharing) {
+        <video #screenVideo autoplay playsinline style="width: 100%; max-width: 480px;"></video>
+        }
+ 
+        @if (micPermissionDenied) {
+        <p class="warning">Microphone access was denied — the consultant won't be able to hear you.</p>
+        }
+ 
+        @if (connectionLost) {
+        <div class="connection-lost">
+            <p>Connection lost.</p>
+            <button (click)="goHome()">Back to start</button>
+        </div>
+        }
+    </div>
+</div>
+}

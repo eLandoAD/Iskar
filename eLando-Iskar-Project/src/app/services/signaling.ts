@@ -11,7 +11,7 @@ export interface SignalMessage {
 @Injectable({ providedIn: 'root' })
 export class Signaling {
   private socket: WebSocket | null = null;
-  private sessionId = '';
+  public sessionId = '';
   private readonly role = 'customer';
 
   readonly messages$ = new Subject<SignalMessage>();

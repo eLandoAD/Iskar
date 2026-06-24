@@ -9,6 +9,7 @@ import { Subscription } from 'rxjs';
 interface ChatMessage {
   from: 'me' | 'them';
   text: string;
+  fileUrl?: string;
 }
 
 @Component({
@@ -53,14 +54,19 @@ export class ConsultantCall implements OnInit, OnDestroy, AfterViewInit {
       if (msg.type === 'screen-answer') this.handleScreenAnswer(msg.payload);
       if (msg.type === 'screen-ice-candidate') this.screenPc?.addIceCandidate(new RTCIceCandidate(msg.payload));
       if (msg.type === 'file-meta') {
-        this.receivedFiles.push({
-          name: msg.payload.name,
-          url: `http://localhost:8080${msg.payload.url}`
-        });
+        const url = `http://localhost:8080${msg.payload.url}`;
+        const name = msg.payload.name;
+        this.messages = [...this.messages, {
+          from: 'them',
+          text: `📎 ${name}`,
+          fileUrl: url
+        }];
         this.cdr.detectChanges();
+        this.scrollChat();
       }
       if (msg.type === 'chat') {
-        this.messages.push({ from: 'them', text: msg.payload.text });
+        this.messages = [...this.messages, { from: 'them', text: msg.payload.text }];
+        this.cdr.detectChanges();
         this.scrollChat();
       }
       if (msg.type === 'end-call') this.leaveCall();
@@ -208,8 +214,9 @@ export class ConsultantCall implements OnInit, OnDestroy, AfterViewInit {
   sendMessage(): void {
     if (!this.chatInput.trim()) return;
     this.signaling.send('chat', this.sessionId, { text: this.chatInput });
-    this.messages.push({ from: 'me', text: this.chatInput });
+    this.messages = [...this.messages, { from: 'me', text: this.chatInput }];
     this.chatInput = '';
+    this.cdr.detectChanges();
     this.scrollChat();
   }
 

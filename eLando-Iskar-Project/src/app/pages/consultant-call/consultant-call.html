@@ -26,13 +26,10 @@
 
         <div class="chat-messages" #chatMessages>
             <div class="message" *ngFor="let msg of messages" [ngClass]="msg.from === 'me' ? 'mine' : 'theirs'">
-                <span>{{ msg.text }}</span>
-                <div class="received-files" *ngIf="receivedFiles.length > 0">
-                    <h4>Received Files</h4>
-                    <div *ngFor="let file of receivedFiles" class="file-item">
-                        <a [href]="file.url" target="_blank" download>📎 {{ file.name }}</a>
-                    </div>
-                </div>
+                <a *ngIf="msg.fileUrl" [href]="msg.fileUrl" target="_blank" class="file-link">
+                    {{ msg.text }}
+                </a>
+                <span *ngIf="!msg.fileUrl">{{ msg.text }}</span>
             </div>
         </div>
 

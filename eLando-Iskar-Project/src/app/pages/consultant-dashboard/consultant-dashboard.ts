@@ -64,7 +64,7 @@ export class ConsultantDashboard implements OnInit, OnDestroy {
           .filter((c: any) => c.status === 'WAITING' || c.status === 'ACTIVE')
           .map((c: any) => ({
             sessionId: c.sessionId,
-            sourcePage: c.sourcePage,
+            sourcePage: c.sourcePage?.replace('{sourcePage=', '').replace('}', '') || 'Unknown',
             waitTime: 0
           }));
         this.waitingCustomers = [...filtered];

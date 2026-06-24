@@ -1,7 +1,7 @@
 .call-page {
     display: flex;
     height: 100vh;
-    background: #1a1a2e;
+    background: linear-gradient(135deg, #2e1e35 0%, #261542 100%);
     color: white;
     font-family: sans-serif;
 }
@@ -74,16 +74,16 @@
     }
 
     .screen-share-btn {
-        background: #1976d2;
+        background: #2d105c;
         color: white;
 
         &:hover {
-            background: #1565c0;
+            background: #7044b8;
         }
     }
 
     .end-call-btn {
-        background: #e53935;
+        background: #861e1c;
         color: white;
 
         &:hover {
@@ -94,7 +94,7 @@
 
 .chat-panel {
     width: 300px;
-    background: #16213e;
+    background: linear-gradient(135deg, #412a4b 0%, #361f5c 100%);
     display: flex;
     flex-direction: column;
     padding: 20px;
@@ -113,7 +113,7 @@
 
         .file-item a {
             display: block;
-            color: #64b5f6;
+            color: #b064f6;
             font-size: 13px;
             text-decoration: none;
             padding: 4px 0;
@@ -147,12 +147,12 @@
 
         &.mine {
             align-self: flex-end;
-            background: #1976d2;
+            background: #7f19d2;
         }
 
         &.theirs {
             align-self: flex-start;
-            background: #333;
+            background: #7e7e7e;
         }
     }
 }
@@ -166,7 +166,7 @@
         padding: 8px;
         border-radius: 6px;
         border: none;
-        background: #0f3460;
+        background: #37214d;
         color: white;
         font-size: 14px;
 
@@ -177,10 +177,19 @@
 
     button {
         padding: 8px 14px;
-        background: #1976d2;
+        background: #441261;
         color: white;
         border: none;
         border-radius: 6px;
         cursor: pointer;
+    }
+
+    .file-link {
+        color: #ffffff;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
     }
 }

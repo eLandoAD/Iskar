@@ -4,41 +4,26 @@
     <button (click)="goHome()">Back to start</button>
 </div>
 } @else {
-<video #remoteVideo autoplay playsinline style="width: 100%; max-width: 480px;"></video>
- 
-<div class="chat">
-    <div class="chat-log">
-        @for (entry of chatLog; track $index) {
-        <p [class.me]="entry.from === 'me'">
-            <strong>{{ entry.from === 'me' ? 'You' : 'Consultant' }}:</strong> {{ entry.text }}
-        </p>
-        }
-    </div>
- 
-    <div class="chat-input">
-        <input [(ngModel)]="draft" (keyup.enter)="sendChat()" placeholder="Type a message…" />
-        <button (click)="sendChat()">Send</button>
-    </div>
- 
-    <div class="file-transfer">
-        <input #fileInput type="file" (change)="onFileSelected($event)" />
- 
+<div class="call-page">
+
+    <!-- Left: File Upload -->
+    <div class="side-panel left-panel">
+        <h3>Send File</h3>
+        <label class="file-label">
+            <input #fileInput type="file" (change)="onFileSelected($event)" />
+            📎 Choose file
+        </label>
         @if (sentFiles.length > 0) {
-        <ul class="sent-files">
+        <div class="sent-files">
+            <p class="sent-label">Sent:</p>
             @for (name of sentFiles; track name) {
-            <li>Sent: {{ name }}</li>
+            <div class="file-item">{{ name }}</div>
             }
-        </ul>
+        </div>
         }
- 
-        @if (isScreenSharing) {
-        <video #screenVideo autoplay playsinline style="width: 100%; max-width: 480px;"></video>
-        }
- 
         @if (micPermissionDenied) {
-        <p class="warning">Microphone access was denied — the consultant won't be able to hear you.</p>
+        <p class="warning">⚠️ Microphone access denied</p>
         }
- 
         @if (connectionLost) {
         <div class="connection-lost">
             <p>Connection lost.</p>
@@ -46,5 +31,37 @@
         </div>
         }
     </div>
+
+    <!-- Middle: Video -->
+    <div class="main-panel">
+        <div class="video-wrapper">
+            <video #remoteVideo autoplay playsinline class="remote-video"></video>
+            <p class="video-label">Consultant</p>
+        </div>
+
+        @if (isScreenSharing) {
+        <div class="video-wrapper">
+            <video #screenVideo autoplay playsinline class="screen-video"></video>
+            <p class="video-label">Screen Share</p>
+        </div>
+        }
+    </div>
+
+    <!-- Right: Chat -->
+    <div class="side-panel right-panel">
+        <h3>Chat</h3>
+        <div class="chat-messages">
+            @for (entry of chatLog; track $index) {
+            <div class="message" [class.mine]="entry.from === 'me'" [class.theirs]="entry.from === 'consultant'">
+                <span>{{ entry.text }}</span>
+            </div>
+            }
+        </div>
+        <div class="chat-input">
+            <input [(ngModel)]="draft" (keyup.enter)="sendChat()" placeholder="Type a message..." />
+            <button (click)="sendChat()">Send</button>
+        </div>
+    </div>
+
 </div>
 }

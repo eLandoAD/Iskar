@@ -1,5 +1,6 @@
-import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Signaling, SignalMessage } from '../../services/signaling';
 import { Router } from '@angular/router';
 
@@ -11,17 +12,21 @@ interface ChatEntry {
 @Component({
   selector: 'app-call',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, CommonModule],
   templateUrl: './call.html',
   styleUrl: './call.scss',
 })
 export class Call implements OnInit {
   @ViewChild('remoteVideo') remoteVideoRef!: ElementRef<HTMLVideoElement>;
-  @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('screenVideo') screenVideoRef!: ElementRef<HTMLVideoElement>;
 
   private peerConnection!: RTCPeerConnection;
   private screenPeerConnection!: RTCPeerConnection;
+
+  // Store streams until video elements are ready
+  private pendingRemoteStream: MediaStream | null = null;
+  private pendingScreenStream: MediaStream | null = null;
+
   isScreenSharing = false;
   micPermissionDenied = false;
   connectionLost = false;
@@ -31,15 +36,15 @@ export class Call implements OnInit {
   draft = '';
   sentFiles: string[] = [];
 
+  private cdr = inject(ChangeDetectorRef);
+
   constructor(
     private signaling: Signaling,
     private router: Router,
-    private cdr: ChangeDetectorRef
   ) { }
-
+  
   ngOnInit(): void {
     this.signaling.messages$.subscribe((msg) => {
-      console.log('Customer received message:', msg.type);
       this.handleMessage(msg);
     });
   }
@@ -47,30 +52,32 @@ export class Call implements OnInit {
   sendChat(): void {
     if (!this.draft.trim()) return;
     this.signaling.send('chat', { text: this.draft });
-    this.chatLog.push({ from: 'me', text: this.draft });
+    this.chatLog = [...this.chatLog, { from: 'me', text: this.draft }];
     this.draft = '';
+    this.cdr.detectChanges();
   }
 
   private async handleMessage(msg: SignalMessage): Promise<void> {
-    console.log('Customer received message:', msg.type);
     if (msg.type === 'offer') {
       await this.handleOffer(msg.payload);
     } else if (msg.type === 'ice-candidate') {
-      await this.peerConnection.addIceCandidate(new RTCIceCandidate(msg.payload));
+      await this.peerConnection?.addIceCandidate(new RTCIceCandidate(msg.payload));
     } else if (msg.type === 'chat') {
-      this.chatLog.push({ from: 'consultant', text: msg.payload.text });
+      this.chatLog = [...this.chatLog, { from: 'consultant', text: msg.payload.text }];
+      this.cdr.detectChanges();
     } else if (msg.type === 'screen-offer') {
       await this.handleScreenOffer(msg.payload);
     } else if (msg.type === 'screen-ice-candidate') {
-      await this.screenPeerConnection.addIceCandidate(new RTCIceCandidate(msg.payload));
+      await this.screenPeerConnection?.addIceCandidate(new RTCIceCandidate(msg.payload));
     } else if (msg.type === 'screen-ended') {
       this.screenPeerConnection?.close();
       this.isScreenSharing = false;
-    } else if (msg.type === 'end-call') {
-      this.callEnded = true;
       this.cdr.detectChanges();
+    } else if (msg.type === 'end-call') {
       this.peerConnection?.close();
       this.screenPeerConnection?.close();
+      this.callEnded = true;
+      this.cdr.detectChanges();
     }
   }
 
@@ -79,10 +86,12 @@ export class Call implements OnInit {
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     });
 
-    // Set ontrack FIRST before setRemoteDescription
     this.peerConnection.ontrack = (event) => {
-      console.log('Track received!', event.streams);
-      this.remoteVideoRef.nativeElement.srcObject = event.streams[0];
+      const stream = event.streams[0];
+      if (!stream) return;
+      // Store stream and attach once DOM is ready
+      this.pendingRemoteStream = stream;
+      this.attachRemoteStream();
     };
 
     this.peerConnection.onicecandidate = (event) => {
@@ -92,37 +101,55 @@ export class Call implements OnInit {
     };
 
     this.peerConnection.oniceconnectionstatechange = () => {
-      const state = this.peerConnection.iceConnectionState;
-      if (state === 'failed' || state === 'disconnected') {
+      if (this.peerConnection.iceConnectionState === 'failed' ||
+        this.peerConnection.iceConnectionState === 'disconnected') {
         this.connectionLost = true;
+        this.cdr.detectChanges();
       }
     };
 
     await this.peerConnection.setRemoteDescription(offer);
 
-    this.peerConnection.getTransceivers().forEach((transceiver) => {
-      if (transceiver.receiver.track?.kind === 'video') {
-        transceiver.direction = 'recvonly';
-      }
+    this.peerConnection.getTransceivers().forEach((t) => {
+      if (t.receiver.track?.kind === 'video') t.direction = 'recvonly';
     });
 
     let micStream: MediaStream | null = null;
     try {
       micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-      console.warn('Microphone permission denied or unavailable', err);
       this.micPermissionDenied = true;
+      this.cdr.detectChanges();
     }
 
     if (micStream) {
-      micStream.getAudioTracks().forEach((track) =>
-        this.peerConnection.addTrack(track, micStream!));
+      micStream.getAudioTracks().forEach(t => this.peerConnection.addTrack(t, micStream!));
     }
 
     const answer = await this.peerConnection.createAnswer();
     await this.peerConnection.setLocalDescription(answer);
-
     this.signaling.send('answer', answer);
+  }
+
+  private attachRemoteStream(): void {
+    if (!this.pendingRemoteStream) return;
+    if (this.remoteVideoRef?.nativeElement) {
+      this.remoteVideoRef.nativeElement.srcObject = this.pendingRemoteStream;
+      this.pendingRemoteStream = null;
+    } else {
+      // Retry until element is in DOM
+      setTimeout(() => this.attachRemoteStream(), 100);
+    }
+  }
+
+  private attachScreenStream(): void {
+    if (!this.pendingScreenStream) return;
+    if (this.screenVideoRef?.nativeElement) {
+      this.screenVideoRef.nativeElement.srcObject = this.pendingScreenStream;
+      this.pendingScreenStream = null;
+    } else {
+      setTimeout(() => this.attachScreenStream(), 100);
+    }
   }
 
   private async handleScreenOffer(offer: RTCSessionDescriptionInit): Promise<void> {
@@ -130,39 +157,27 @@ export class Call implements OnInit {
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     });
 
-    // Set to true FIRST so the video element gets rendered
-    this.isScreenSharing = true;
-    this.cdr.detectChanges();
-
     this.screenPeerConnection.ontrack = (event) => {
-      // Wait for DOM to render the video element
-      setTimeout(() => {
-        if (this.screenVideoRef?.nativeElement) {
-          this.screenVideoRef.nativeElement.srcObject = event.streams[0];
-        }
-      }, 100);
+      const stream = event.streams[0];
+      if (!stream) return;
+      this.pendingScreenStream = stream;
+      this.isScreenSharing = true;
+      this.cdr.detectChanges();
+      // Attach after DOM renders the screen video element
+      setTimeout(() => this.attachScreenStream(), 150);
     };
 
-    this.screenPeerConnection.ontrack = (event) => {
-      console.log('Screen track received!', event.streams);
-      setTimeout(() => {
-        if (this.screenVideoRef?.nativeElement) {
-          this.screenVideoRef.nativeElement.srcObject = event.streams[0];
-        } else {
-          console.log('screenVideoRef still undefined!');
-        }
-      }, 100);
+    this.screenPeerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        this.signaling.send('screen-ice-candidate', event.candidate.toJSON());
+      }
     };
 
     await this.screenPeerConnection.setRemoteDescription(offer);
-
-    this.screenPeerConnection.getTransceivers().forEach((transceiver) => {
-      transceiver.direction = 'recvonly';
-    });
+    this.screenPeerConnection.getTransceivers().forEach(t => t.direction = 'recvonly');
 
     const answer = await this.screenPeerConnection.createAnswer();
     await this.screenPeerConnection.setLocalDescription(answer);
-
     this.signaling.send('screen-answer', answer);
   }
 
@@ -170,8 +185,6 @@ export class Call implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-
-    console.log('Uploading file, sessionId:', this.signaling.sessionId);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -182,14 +195,13 @@ export class Call implements OnInit {
       body: formData,
     });
 
-    console.log('Upload response status:', response.status);
-
     if (!response.ok) {
       console.error('File upload failed', response.status);
       return;
     }
 
-    this.sentFiles.push(file.name);
+    this.sentFiles = [...this.sentFiles, file.name];
+    this.cdr.detectChanges();
     input.value = '';
   }
 
